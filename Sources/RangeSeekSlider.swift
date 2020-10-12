@@ -8,6 +8,15 @@
 
 import UIKit
 
+open class RangeSeekConfigure {
+    public var sliderLine = CALayer()
+    public var sliderLineBetweenHandles = CALayer()
+    public var leftHandle: CALayer = CALayer()
+    public var rightHandle: CALayer = CALayer()
+    
+    public init() {}
+}
+
 @IBDesignable open class RangeSeekSlider: UIControl {
 
     // MARK: - initializers
@@ -27,6 +36,16 @@ import UIKit
     public convenience init(frame: CGRect = .zero, completion: ((RangeSeekSlider) -> Void)? = nil) {
         self.init(frame: frame)
         completion?(self)
+    }
+    
+    public required init(configure: RangeSeekConfigure) {
+        super.init(frame: .zero)
+        sliderLine = configure.sliderLine
+        sliderLineBetweenHandles = configure.sliderLineBetweenHandles
+        leftHandle = configure.leftHandle
+        rightHandle = configure.rightHandle
+        
+        setup()
     }
 
 
@@ -103,6 +122,9 @@ import UIKit
 
     /// fixes the labels above the slider controls. true: labels will be fixed to both ends. false: labels will move with the handles. Default is false.
     @IBInspectable open var labelsFixed: Bool = false
+    
+    /// position of lables. false: labels bellow slidebar, true: labels above slidebar. Default is false.
+    @IBInspectable open var labelsAbove: Bool = false
 
     /// The minimum distance the two selected slider values must be apart. Default is 0.
     @IBInspectable open var minDistance: CGFloat = 0.0 {
@@ -193,6 +215,12 @@ import UIKit
             updateLineHeight()
         }
     }
+    
+    @IBInspectable open var barSidePadding: CGFloat = 16.0 {
+        didSet {
+            updateLineHeight()
+        }
+    }
 
     /// Handle border width (default 0.0)
     @IBInspectable open var handleBorderWidth: CGFloat = 0.0 {
@@ -227,11 +255,11 @@ import UIKit
     private enum HandleTracking { case none, left, right }
     private var handleTracking: HandleTracking = .none
 
-    private let sliderLine: CALayer = CALayer()
-    private let sliderLineBetweenHandles: CALayer = CALayer()
+    private var sliderLine: CALayer = CALayer()
+    private var sliderLineBetweenHandles: CALayer = CALayer()
 
-    private let leftHandle: CALayer = CALayer()
-    private let rightHandle: CALayer = CALayer()
+    private var leftHandle: CALayer = CALayer()
+    private var rightHandle: CALayer = CALayer()
 
     fileprivate let minLabel: CATextLayer = CATextLayer()
     fileprivate let maxLabel: CATextLayer = CATextLayer()
@@ -459,7 +487,6 @@ import UIKit
     }
 
     private func updateLineHeight() {
-        let barSidePadding: CGFloat = 16.0
         let yMiddle: CGFloat = frame.height / 2.0
         let lineLeftSide: CGPoint = CGPoint(x: barSidePadding, y: yMiddle)
         let lineRightSide: CGPoint = CGPoint(x: frame.width - barSidePadding,
@@ -560,12 +587,18 @@ import UIKit
         }
 
         let minSpacingBetweenLabels: CGFloat = 8.0
+        var positionMinLabelY = leftHandle.frame.maxY + (minLabelTextSize.height/2) + labelPadding
+        if labelsAbove {
+            positionMinLabelY = leftHandle.frame.minY - (minLabelTextSize.height/2) - labelPadding
+        }
+        
+        var positionMaxLabelY = rightHandle.frame.maxY + (maxLabelTextSize.height/2) + labelPadding
+        if labelsAbove {
+            positionMaxLabelY = rightHandle.frame.minY - (maxLabelTextSize.height/2) - labelPadding
+        }
 
-        let newMinLabelCenter: CGPoint = CGPoint(x: leftHandle.frame.midX,
-                                                 y: leftHandle.frame.maxY + (minLabelTextSize.height/2) + labelPadding)
-
-        let newMaxLabelCenter: CGPoint = CGPoint(x: rightHandle.frame.midX,
-                                                 y: rightHandle.frame.maxY + (maxLabelTextSize.height/2) + labelPadding)
+        let newMinLabelCenter: CGPoint = CGPoint(x: leftHandle.frame.midX, y: positionMinLabelY)
+        let newMaxLabelCenter: CGPoint = CGPoint(x: rightHandle.frame.midX, y: positionMaxLabelY)
         
         let newLeftMostXInMaxLabel: CGFloat = newMaxLabelCenter.x - maxLabelTextSize.width / 2.0
         let newRightMostXInMinLabel: CGFloat = newMinLabelCenter.x + minLabelTextSize.width / 2.0
